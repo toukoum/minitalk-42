@@ -5,31 +5,43 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: rgiraud <rgiraud@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/12/01 21:37:02 by rgiraud           #+#    #+#             */
-/*   Updated: 2023/12/02 22:16:11 by rgiraud          ###   ########.fr       */
+/*   Created: 2023/12/01 23:50:55 by rgiraud           #+#    #+#             */
+/*   Updated: 2023/12/05 17:20:29 by rgiraud          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/minitalk.h"
 
-t_signal_data	g_sigdata;
+int		g_pid_server;
 
 void	add_byte_to_seq(int bit)
 {
-	g_sigdata.byte <<= 1;
-	g_sigdata.byte += bit;
-	if (g_sigdata.byte_size == 8)
+	static int	byte = 0;
+	static int	byte_size = 1;
+
+	byte <<= 1;
+	byte += bit;
+	if (byte_size == 8)
 	{
-		ft_printf("%c", g_sigdata.byte);
-		g_sigdata.byte = 0;
-		g_sigdata.byte_size = 1;
+		if (byte == '\0')
+		{
+			kill(g_pid_server, SIGUSR2);
+			write(1, "\n", 1);
+		}
+		else
+			ft_printf("%c", byte);
+		byte = 0;
+		byte_size = 1;
 	}
 	else
-		g_sigdata.byte_size++;
+		byte_size++;
+	kill(g_pid_server, SIGUSR1);
 }
 
-void	signal_handler(int signum)
+void	signal_handler(int signum, siginfo_t *info, void *context)
 {
+	(void)context;
+	g_pid_server = info->si_pid;
 	if (signum == SIGUSR1)
 		add_byte_to_seq(1);
 	else
@@ -40,17 +52,15 @@ int	main(void)
 {
 	struct sigaction	act;
 
-	g_sigdata.byte = 0;
-	g_sigdata.byte_size = 1;
-	act.sa_handler = signal_handler;
+	act.sa_sigaction = signal_handler;
 	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
+	act.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
 	ft_printf("\033[1;92mServeur démarré !\033[0m\n");
 	ft_printf("\033[1;94m--> PID Serveur: \033[1;93m%d\033[0m\n", getpid());
 	ft_printf("\033[1;90mEn attente de messages...\033[0m\n");
-	sigaction(SIGUSR1, &act, NULL);
-	sigaction(SIGUSR2, &act, NULL);
+	sigaction(SIGUSR1, &act, 0);
+	sigaction(SIGUSR2, &act, 0);
 	while (1)
-		pause();
+		sleep(1);
 	return (0);
 }
