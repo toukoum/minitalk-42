@@ -6,7 +6,7 @@
 /*   By: rgiraud <rgiraud@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/01 21:37:06 by rgiraud           #+#    #+#             */
-/*   Updated: 2023/12/02 22:16:02 by rgiraud          ###   ########.fr       */
+/*   Updated: 2023/12/05 10:43:22 by rgiraud          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,7 @@ void	send_message(char *message, int pid)
 		encrypt_to_two(message[i], pid);
 		i++;
 	}
+	encrypt_to_two('\0', pid);
 }
 
 int	main(int argc, char **argv)

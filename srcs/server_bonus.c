@@ -6,35 +6,91 @@
 /*   By: rgiraud <rgiraud@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/01 23:50:55 by rgiraud           #+#    #+#             */
-/*   Updated: 2023/12/02 22:16:22 by rgiraud          ###   ########.fr       */
+/*   Updated: 2023/12/05 12:07:38 by rgiraud          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/minitalk.h"
 
-t_signal_data	g_sigdata;
+int		g_pid_server;
+
+char	*ft_realloc_str(char *message, int idx_message, int byte)
+{
+	static int	buffer_size;
+	char		*result;
+
+	if (idx_message >= buffer_size)
+	{
+		if (buffer_size == 0)
+			buffer_size = 128;
+		else
+			buffer_size *= 2;
+		result = malloc(buffer_size * sizeof(char));
+		if (!result)
+		{
+			free(message);
+			exit(1);
+		}
+		ft_memcpy(result, message, idx_message);
+		free(message);
+	}
+	else
+		result = message;
+	result[idx_message] = byte;
+	result[idx_message + 1] = '\0';
+	return (result);
+}
+
+void	ft_add_char_to_str(int byte)
+{
+	static char	*message;
+	static int	idx_message;
+
+	if (byte == '\0')
+	{
+		write(1, message, idx_message);
+		write(1, "\n", 1);
+		free(message);
+		message = NULL;
+		idx_message = 0;
+		kill(g_pid_server, SIGUSR1);
+		return ;
+	}
+	if (!message)
+	{
+		message = malloc(128 * sizeof(char));
+		if (!message)
+			exit(1);
+		message[idx_message] = byte;
+		message[1] = '\0';
+		idx_message++;
+		return ;
+	}
+	message = ft_realloc_str(message, idx_message, byte);
+	idx_message++;
+}
 
 void	add_byte_to_seq(int bit)
 {
-	g_sigdata.byte <<= 1;
-	g_sigdata.byte += bit;
-	if (g_sigdata.byte_size == 8)
+	static int	byte;
+	static int	byte_size;
+
+	byte <<= 1;
+	byte += bit;
+	if (byte_size == 7)
 	{
-		if (g_sigdata.byte == 0)
-			kill(g_sigdata.pid_client, SIGUSR1);
-		else
-			ft_printf("%c", g_sigdata.byte);
-		g_sigdata.byte = 0;
-		g_sigdata.byte_size = 1;
+		ft_add_char_to_str(byte);
+		byte = 0;
+		byte_size = 0;
 	}
 	else
-		g_sigdata.byte_size++;
+		byte_size++;
 }
 
 void	signal_handler(int signum, siginfo_t *info, void *context)
 {
 	(void)context;
-	g_sigdata.pid_client = info->si_pid;
+	g_pid_server = info->si_pid;
 	if (signum == SIGUSR1)
 		add_byte_to_seq(1);
 	else
@@ -45,8 +101,6 @@ int	main(void)
 {
 	struct sigaction	act;
 
-	g_sigdata.byte = 0;
-	g_sigdata.byte_size = 1;
 	act.sa_sigaction = signal_handler;
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = SA_SIGINFO;
