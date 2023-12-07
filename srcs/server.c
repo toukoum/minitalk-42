@@ -6,15 +6,13 @@
 /*   By: rgiraud <rgiraud@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/01 23:50:55 by rgiraud           #+#    #+#             */
-/*   Updated: 2023/12/05 17:20:29 by rgiraud          ###   ########.fr       */
+/*   Updated: 2023/12/07 08:25:32 by rgiraud          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/minitalk.h"
 
-int		g_pid_server;
-
-void	add_byte_to_seq(int bit)
+void	add_byte_to_seq(int bit, int pid_server)
 {
 	static int	byte = 0;
 	static int	byte_size = 1;
@@ -25,7 +23,7 @@ void	add_byte_to_seq(int bit)
 	{
 		if (byte == '\0')
 		{
-			kill(g_pid_server, SIGUSR2);
+			kill(pid_server, SIGUSR2);
 			write(1, "\n", 1);
 		}
 		else
@@ -35,17 +33,16 @@ void	add_byte_to_seq(int bit)
 	}
 	else
 		byte_size++;
-	kill(g_pid_server, SIGUSR1);
+	kill(pid_server, SIGUSR1);
 }
 
 void	signal_handler(int signum, siginfo_t *info, void *context)
 {
 	(void)context;
-	g_pid_server = info->si_pid;
 	if (signum == SIGUSR1)
-		add_byte_to_seq(1);
+		add_byte_to_seq(1, info->si_pid);
 	else
-		add_byte_to_seq(0);
+		add_byte_to_seq(0, info->si_pid);
 }
 
 int	main(void)

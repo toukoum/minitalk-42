@@ -6,7 +6,7 @@
 /*   By: rgiraud <rgiraud@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/01 23:51:03 by rgiraud           #+#    #+#             */
-/*   Updated: 2023/12/05 17:12:39 by rgiraud          ###   ########.fr       */
+/*   Updated: 2023/12/07 08:15:47 by rgiraud          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,7 +55,11 @@ void	send_message(char *message, int pid)
 
 void	check_send(int signum)
 {
-	if (signum == SIGUSR1)
+	if (signum == SIGUSR2)
+	{
+		exit(EXIT_SUCCESS);
+	}
+	else if (signum == SIGUSR1)
 		g_synch_bit = 1;
 }
 
@@ -70,6 +74,7 @@ int	main(int argc, char **argv)
 		return (1);
 	}
 	signal(SIGUSR1, &check_send);
+	signal(SIGUSR2, &check_send);
 	pid_server = ft_atoi(argv[1]);
 	if (!pid_server)
 	{
